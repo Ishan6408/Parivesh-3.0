@@ -52,6 +52,18 @@ function SubmitProject() {
     { id: 'c14', text: 'Mining operations will strictly follow the Sustainable Sand Mining Guidelines and other environmental regulations.' }
   ];
 
+  const REQUIRED_DOCS = [
+    { id: 'photo', label: 'Applicant Photo', icon: User },
+    { id: 'sign',  label: 'Authorized Signature', icon: Send },
+    { id: 'aadhar',label: 'Aadhaar Card', icon: Shield },
+    { id: 'pan',   label: 'PAN Card', icon: ShieldCheck },
+    { id: 'land',  label: 'Land Ownership Docs', icon: Building },
+    { id: 'eia',   label: 'Project EIA Report', icon: FileText },
+    { id: 'noc',   label: 'Local Body NOC', icon: CheckCircle },
+  ];
+
+  const [uploadedDocs, setUploadedDocs] = useState<Record<string, string>>({});
+
   const allAgreed = COMPLIANCE_POINTS.every(p => agreedPoints[p.id]);
 
   const togglePoint = (id: string) => {
@@ -64,7 +76,7 @@ function SubmitProject() {
       setStep(2);
       return;
     }
-    if (!allAgreed) return;
+    if (!allAgreed || Object.keys(uploadedDocs).length < REQUIRED_DOCS.length) return;
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -91,33 +103,17 @@ function SubmitProject() {
   };
 
 
-  const onDrop = async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
+  const handleFileUpload = (docId: string, fileName: string) => {
     setIsUploading(true);
     setUploadProgress(0);
-    const tick = setInterval(() => setUploadProgress(p => Math.min(p + 20, 90)), 200);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          title: `[Infrastructure Projects] ${file.name.replace('.pdf', '')} Project`,
-          description: `EIA document: ${file.name}`,
-
-          applicant: user?.organization || user?.name,
-          lat: 20 + Math.random() * 10,
-          lng: 70 + Math.random() * 15,
-        }),
-      });
-      if (res.ok) { setUploadProgress(100); setTimeout(() => setSubmitted(true), 400); }
-    } finally {
+    const tick = setInterval(() => setUploadProgress(p => Math.min(p + 20, 95)), 100);
+    setTimeout(() => {
       clearInterval(tick);
+      setUploadedDocs(prev => ({ ...prev, [docId]: fileName }));
       setIsUploading(false);
-    }
+      setUploadProgress(100);
+    }, 800);
   };
-
-  const { getRootProps, getInputProps } = useDropzone({ onDrop, multiple: false } as any);
 
   if (submitted) return (
     <div className="p-6 md:p-10 max-w-2xl mx-auto fade-up">
@@ -198,20 +194,50 @@ function SubmitProject() {
             </form>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center" {...getRootProps()}>
-              <input {...getInputProps()} />
-              <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
-                <Upload className="text-emerald-400" size={24} />
+          <div className="space-y-6 flex flex-col">
+            <div className="bg-[#0f1f4a]/80 border border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                <Upload size={16} className="text-emerald-400" /> Upload Documents (7 Required)
+              </h2>
+              <div className="space-y-3">
+                {REQUIRED_DOCS.map((doc) => (
+                  <div key={doc.id} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                    uploadedDocs[doc.id] ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-zinc-950 border-zinc-800'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${uploadedDocs[doc.id] ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-900 text-zinc-500'}`}>
+                        <doc.icon size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-zinc-200">{doc.label}</p>
+                        {uploadedDocs[doc.id] && <p className="text-[10px] text-emerald-500 truncate mt-0.5">{uploadedDocs[doc.id]}</p>}
+                      </div>
+                    </div>
+                    {uploadedDocs[doc.id] ? (
+                      <CheckCircle size={14} className="text-emerald-500" />
+                    ) : (
+                      <label className="cursor-pointer px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-zinc-300 rounded-lg transition-colors">
+                        UPLOAD
+                        <input type="file" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(doc.id, file.name);
+                        }} />
+                      </label>
+                    )}
+                  </div>
+                ))}
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Upload Draft EIA/KML</h3>
-              <p className="text-zinc-500 text-xs mb-6 max-w-[240px] mx-auto">Drag and drop your project documents or click to browse files.</p>
-              {isUploading ? (
-                <div className="w-full bg-zinc-950 rounded-full h-1.5 border border-zinc-800 mb-2 overflow-hidden">
-                  <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              
+              {isUploading && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-[10px] text-zinc-500 mb-1">
+                    <span>Uploading...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-zinc-950 rounded-full h-1 border border-zinc-800 overflow-hidden">
+                    <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                  </div>
                 </div>
-              ) : (
-                <button className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-colors mb-2">Select Files</button>
               )}
             </div>
 
