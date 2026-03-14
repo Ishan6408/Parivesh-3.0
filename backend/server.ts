@@ -646,6 +646,74 @@ async function startServer() {
     }
   });
 
+  app.post("/api/ai/project-summary", authenticateToken, authorizeRoles('Regulator'), async (req: any, res: any) => {
+    try {
+      if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY.includes('placeholder')) {
+         return res.json({ 
+             overview: "Mock Project Overview: Large scale infrastructure development in sensitive zone.",
+             location: {
+               description: "Project located in Chhattisgarh, 5km from Achanakmar Wildlife Sanctuary.",
+               sensitivity: "High Sensitivity due to proximity to protected forest."
+             },
+             impacts: ["Potential air pollution from heavy machinery", "Water table depletion", "Increased traffic in sensitive zones"],
+             clearances: [
+               { name: "Environmental Clearance", status: "Required" },
+               { name: "Forest Clearance", status: "Required" },
+               { name: "Wildlife Clearance", status: "Required" }
+             ],
+             documents: [
+               { name: "EIA Report", status: "Flagged" },
+               { name: "KML Boundaries", status: "Verified" }
+             ],
+             riskScore: 85,
+             riskLevel: "High Risk",
+             recommendation: "Request additional hydrology data and clarify wildlife corridor impact."
+         });
+      }
+      
+      const { projectId } = req.body;
+      const project = db.prepare("SELECT * FROM projects WHERE id = ?").get(projectId) as any;
+      if (!project) return res.status(404).json({ error: "Project not found" });
+
+      const docs = db.prepare("SELECT fileName FROM documents WHERE projectId = ?").all(projectId) as any[];
+      const docNames = docs.map(d => d.fileName).join(", ");
+
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const response = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{
+          role: "user",
+          content: `You are an AI Environmental Regulatory Analyst for the MOEFCC.
+        Generate a structured regulatory summary for this project:
+        Title: ${project.title}
+        Description: ${project.description}
+        Coordinates: ${project.lat}, ${project.lng}
+        Uploaded Documents: ${docNames}
+        
+        Analyze the project for environmental sensitivity (forests, water, wildlife) and regulatory requirements.
+        
+        Return JSON object with these EXACT keys:
+        {
+          "overview": "Concise industry/scale summary",
+          "location": { "description": "Geographic summary", "sensitivity": "Environmental sensitivity description" },
+          "impacts": ["Risk 1", "Risk 2"],
+          "clearances": [{ "name": "Clearance Name", "status": "Required" | "Exempt" }],
+          "documents": [{ "name": "Doc Name", "status": "Verified" | "Flagged" | "Missing info" }],
+          "riskScore": <0-100>,
+          "riskLevel": "Low Risk" | "Medium Risk" | "High Risk",
+          "recommendation": "Calculated officer action recommendation"
+        }`
+        }],
+        response_format: { type: "json_object" }
+      });
+      const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+      res.json(result);
+    } catch (error: any) {
+      console.error("Project Summary AI Error:", error.message || error);
+      res.status(500).json({ error: "Failed to generate project summary." });
+    }
+  });
+
   app.post("/api/ai/analyze-document", authenticateToken, authorizeRoles('Applicant', 'Regulator'), async (req: any, res: any) => {
     try {
       if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY.includes('placeholder')) {

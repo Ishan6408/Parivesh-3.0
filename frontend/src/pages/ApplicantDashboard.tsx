@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 import { motion } from 'motion/react';
 import {
-  Upload, CheckCircle, Download, Shield, Send, ChevronRight, ShieldCheck, AlertCircle
+  Upload, CheckCircle, Download, Shield, Send, ChevronRight, ShieldCheck, AlertCircle, User as UserIcon, FileText, Building
 } from 'lucide-react';
 
-import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../context/AuthContext';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { PROJECT_CATEGORIES, ProjectCategory } from '../constants/clearanceWorkflow';
@@ -53,7 +52,7 @@ function SubmitProject() {
   ];
 
   const REQUIRED_DOCS = [
-    { id: 'photo', label: 'Applicant Photo', icon: User },
+    { id: 'photo', label: 'Applicant Photo', icon: UserIcon },
     { id: 'sign',  label: 'Authorized Signature', icon: Send },
     { id: 'aadhar',label: 'Aadhaar Card', icon: Shield },
     { id: 'pan',   label: 'PAN Card', icon: ShieldCheck },

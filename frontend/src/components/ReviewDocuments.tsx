@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
-import { FileText, Search, BrainCircuit, AlertCircle, CheckCircle, ChevronRight, Download, MessageSquare, Zap } from 'lucide-react';
+import { 
+  FileText, Search, BrainCircuit, AlertCircle, 
+  MapPin, AlertTriangle, Download, MessageSquare, Zap
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const MOCK_DOCS = [
@@ -9,17 +12,39 @@ const MOCK_DOCS = [
   { id: 3, name: 'Site_Hydrology_Map.pdf', type: 'Technical Map', size: '15.4 MB', date: '2026-03-12', status: 'Pending' },
 ];
 
-const AI_FLAGS = [
-  { page: 12, type: 'Inconsistency', message: 'Water usage estimates contradict the site hydrology report (p. 45).' },
-  { page: 28, type: 'Missing Data', message: 'Seasonal migration patterns for local avian species are not documented.' },
-  { page: 42, type: 'Compliance', message: 'Proposed buffer zone is 15m less than the statutory requirement for Category A projects.' },
-];
-
 export default function ReviewDocuments() {
   const [selectedDoc, setSelectedDoc] = useState(MOCK_DOCS[0]);
   const { token } = useAuth();
+  
+  // Global Project Summary State
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [projectSummary, setProjectSummary] = useState<any>(null);
+
+  // Deep Analysis State
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+
+  useEffect(() => {
+    fetchProjectSummary();
+  }, []);
+
+  const fetchProjectSummary = async () => {
+    setSummaryLoading(true);
+    try {
+      // For demo, we use a fixed projectId or fetch first available
+      const res = await fetch(`${API_BASE_URL}/api/ai/project-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ projectId: 1 }) // Mock ID
+      });
+      const data = await res.json();
+      setProjectSummary(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -40,185 +65,247 @@ export default function ReviewDocuments() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto h-[calc(100vh-100px)] flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-white">Document Review</h1>
+    <div className="p-6 md:p-10 max-w-full mx-auto h-[calc(100vh-100px)] flex flex-col fade-in">
+      <header className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-1">Document Review</h1>
+          <p className="text-zinc-500 text-sm">Reviewing Application: <span className="text-emerald-500">Solar Park Alpha</span></p>
+        </div>
         <div className="flex gap-3">
           <button 
             onClick={() => {
               const content = `Parivesh 3.0 Document Export\nProject: Solar Park Alpha\nDocument: ${selectedDoc.name}\nGenerated: ${new Date().toLocaleString()}`;
               const blob = new Blob([content], { type: 'text/plain' });
               const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `export_${selectedDoc.name.replace('.pdf', '.txt')}`;
-              a.click();
+              window.open(url, '_blank');
             }}
             className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 hover:bg-zinc-800 hover:border-zinc-700 transition-all flex items-center gap-2"
           >
             <Download size={18} /> Export Document
           </button>
           <button 
-            onClick={() => alert(`Clarification request for "${selectedDoc.name}" has been sent to the applicant.`)}
             className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20"
           >
             <MessageSquare size={18} /> Request More Info
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-hidden">
-        {/* Sidebar: Document List */}
-        <div className="lg:col-span-1 space-y-4 overflow-y-auto pr-2">
-          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Project Files</h2>
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
+        {/* Sidebar: Document List (2 cols) */}
+        <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+          <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Project Files</h2>
           {MOCK_DOCS.map((doc) => (
             <div 
               key={doc.id}
               onClick={() => setSelectedDoc(doc)}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer group ${
+              className={`p-3 rounded-xl border transition-all cursor-pointer group ${
                 selectedDoc.id === doc.id 
-                  ? 'bg-emerald-500/10 border-emerald-500/50' 
-                  : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                  ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                  : 'bg-zinc-900 border-zinc-800/50 hover:border-zinc-700'
               }`}
             >
-              <div className="flex items-start gap-3">
-                <FileText className={selectedDoc.id === doc.id ? 'text-emerald-500' : 'text-zinc-500'} size={20} />
+              <div className="flex items-start gap-2.5">
+                <FileText className={selectedDoc.id === doc.id ? 'text-emerald-500' : 'text-zinc-600'} size={18} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-zinc-100 truncate">{doc.name}</div>
-                  <div className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider">{doc.type} • {doc.size}</div>
+                  <div className="text-xs font-semibold text-zinc-200 truncate">{doc.name}</div>
+                  <div className="text-[9px] text-zinc-500 mt-0.5 uppercase tracking-wider">{doc.type}</div>
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                  doc.status === 'Verified' ? 'bg-emerald-500/20 text-emerald-400' :
-                  doc.status === 'Flagged' ? 'bg-red-500/20 text-red-400' :
-                  'bg-zinc-800 text-zinc-400'
+              <div className="mt-2.5 flex items-center justify-between">
+                <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                  doc.status === 'Verified' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                  doc.status === 'Flagged' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                  'bg-zinc-800 text-zinc-500'
                 }`}>
                   {doc.status}
                 </span>
-                <span className="text-[10px] text-zinc-600">{doc.date}</span>
+                <span className="text-[8px] text-zinc-600 font-medium">{doc.date}</span>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Main: PDF Viewer Mock */}
-        <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col relative">
-          <div className="bg-zinc-950 border-b border-zinc-800 p-3 flex items-center justify-between">
+        {/* Main: PDF Viewer Mock (6 cols) */}
+        <div className="lg:col-span-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl overflow-hidden flex flex-col relative shadow-2xl backdrop-blur-xl">
+          <div className="bg-zinc-950/50 border-b border-zinc-800/50 p-2.5 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-xs text-zinc-500">Page 1 of 124</span>
-              <div className="flex gap-1">
-                <button className="p-1 hover:bg-zinc-800 rounded text-zinc-400"><ChevronRight className="rotate-180" size={16} /></button>
-                <button className="p-1 hover:bg-zinc-800 rounded text-zinc-400"><ChevronRight size={16} /></button>
-              </div>
+              <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Document View: {selectedDoc.name}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <button className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400"><Search size={16} /></button>
-              <div className="h-4 w-px bg-zinc-800"></div>
-              <span className="text-xs text-zinc-400">100%</span>
+            <div className="flex items-center gap-2">
+              <button className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-500"><Search size={14} /></button>
+              <div className="h-3 w-px bg-zinc-800"></div>
+              <span className="text-[10px] text-zinc-500 font-bold">100%</span>
             </div>
           </div>
-          <div className="flex-1 bg-zinc-800/50 p-8 overflow-y-auto flex justify-center">
-            <div className="w-full max-w-2xl bg-white shadow-2xl min-h-[1000px] p-12 relative">
-              {/* Mock Content */}
-              <div className="h-8 w-1/3 bg-zinc-200 mb-8"></div>
-              <div className="space-y-4">
-                <div className="h-4 w-full bg-zinc-100"></div>
-                <div className="h-4 w-full bg-zinc-100"></div>
-                <div className="h-4 w-4/5 bg-zinc-100"></div>
-                <div className="h-4 w-full bg-zinc-100"></div>
+          <div className="flex-1 p-6 overflow-y-auto flex justify-center bg-zinc-950/30">
+            <div className="w-full max-w-2xl bg-white shadow-2xl min-h-[1200px] p-16 relative rounded-sm">
+              <div className="h-8 w-1/3 bg-zinc-200/50 rounded-sm mb-12"></div>
+              <div className="space-y-6">
+                <div className="h-4 w-full bg-zinc-100/80 rounded-sm"></div>
+                <div className="h-4 w-full bg-zinc-100/80 rounded-sm"></div>
+                <div className="h-4 w-4/5 bg-zinc-100/80 rounded-sm"></div>
+                <div className="h-4 w-full bg-zinc-100/80 rounded-sm"></div>
                 
-                {/* AI Flag Highlight */}
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-red-500/20 border border-red-500/30 rounded"></div>
-                  <div className="h-4 w-full bg-red-100 relative z-10"></div>
-                  <div className="absolute -right-4 top-0 translate-x-full opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-red-500 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap">AI Flag: Compliance Risk</div>
+                <div className="relative group p-1">
+                  <div className="absolute -inset-1.5 bg-red-500/10 border border-red-200/50 rounded-md"></div>
+                  <div className="h-4 w-full bg-red-50/50 relative z-10 rounded-sm"></div>
+                  <div className="absolute -right-4 top-0 translate-x-full opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="bg-red-600 text-white text-[9px] px-2.5 py-1.5 rounded-lg shadow-xl font-bold tracking-wide">AI FLAG: STATUTORY VIOLATION</div>
                   </div>
                 </div>
 
-                <div className="h-4 w-full bg-zinc-100"></div>
-                <div className="h-4 w-3/4 bg-zinc-100"></div>
+                <div className="h-4 w-full bg-zinc-100/80 rounded-sm"></div>
+                <div className="h-4 w-3/4 bg-zinc-100/80 rounded-sm"></div>
               </div>
-              <div className="mt-12 h-40 w-full bg-zinc-50 border border-zinc-100 rounded flex items-center justify-center">
-                <span className="text-zinc-300 text-xs italic">Map Data Visualization Placeholder</span>
+              <div className="mt-16 h-48 w-full bg-zinc-50 border border-dashed border-zinc-200 rounded-xl flex flex-col items-center justify-center gap-2">
+                 <MapPin className="text-zinc-300" size={32} />
+                 <span className="text-zinc-400 text-[10px] font-medium uppercase tracking-widest">Geospatial Overlay Layer</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Sidebar: AI Insights */}
-        <div className="lg:col-span-1 space-y-6 overflow-y-auto pl-2">
-          {!analysisResult && !analyzing ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
-              <BrainCircuit className="mx-auto text-indigo-400 mb-3" size={32} />
-              <h3 className="text-white font-bold mb-2">AI Document Analyzer</h3>
-              <p className="text-sm text-zinc-400 mb-4">Run a deep forensic analysis on {selectedDoc.name} to detect missing files, copied text, and logical inconsistencies.</p>
-              <button 
-                onClick={handleAnalyze}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-2"
-              >
-                <Zap size={18} /> Run Deep Analysis
-              </button>
+        {/* Sidebar: AI Summary & Insights (4 cols) */}
+        <div className="lg:col-span-4 space-y-6 overflow-y-auto pl-2 custom-scrollbar">
+          {summaryLoading ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center">
+              <div className="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-zinc-400 text-sm font-medium">Generating AI Summary...</p>
             </div>
-          ) : analyzing ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
-              <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-zinc-300 font-medium animate-pulse">Analyzing Document...</p>
-              <p className="text-xs text-zinc-500 mt-2">Checking for plagiarism & compliance.</p>
-            </div>
-          ) : (
-             <>
-               <section>
-                 <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                   <BrainCircuit size={14} className="text-indigo-400" /> AI Verification Result
-                 </h2>
-                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
-                   <div className="flex items-center justify-between">
-                     <span className="text-xs text-zinc-400">Integrity Score</span>
-                     <span className={`text-sm font-bold ${analysisResult.score > 70 ? 'text-emerald-500' : 'text-amber-500'}`}>{analysisResult.score}/100</span>
-                   </div>
-                   <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                     <div className={`h-full ${analysisResult.score > 70 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${analysisResult.score}%` }}></div>
-                   </div>
-                   <div className="bg-zinc-950 p-3 rounded-xl border border-white/5">
-                     <p className="text-xs text-zinc-300 italic">"{analysisResult.summary}"</p>
-                   </div>
-                 </div>
-               </section>
+          ) : projectSummary && (
+            <>
+              {/* Project Insight Card */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="bg-zinc-800/30 p-4 border-b border-zinc-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BrainCircuit size={18} className="text-emerald-400" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Application Summary</h3>
+                  </div>
+                  <div className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${
+                    projectSummary.riskLevel === 'High Risk' ? 'bg-red-500/20 text-red-500' :
+                    projectSummary.riskLevel === 'Medium Risk' ? 'bg-amber-500/20 text-amber-500' :
+                    'bg-emerald-500/20 text-emerald-500'
+                  }`}>
+                    {projectSummary.riskLevel}
+                  </div>
+                </div>
+                
+                <div className="p-5 space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Project Overview</label>
+                    <p className="text-xs text-zinc-300 leading-relaxed">{projectSummary.overview}</p>
+                  </div>
 
-               {(analysisResult.missingFiles?.length > 0 || analysisResult.copiedContent?.length > 0) && (
-                 <section>
-                   <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Flagged Issues</h2>
-                   <div className="space-y-3">
-                     {analysisResult.missingFiles?.map((file: string, i: number) => (
-                       <div key={`missing-${i}`} className="p-4 bg-zinc-900 border border-red-500/20 rounded-xl">
-                         <div className="flex items-center justify-between mb-2">
-                           <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Missing Required File</span>
-                         </div>
-                         <p className="text-xs text-zinc-300 font-medium">{file}</p>
-                       </div>
-                     ))}
-                     {analysisResult.copiedContent?.map((copied: any, i: number) => (
-                       <div key={`copy-${i}`} className="p-4 bg-zinc-900 border border-amber-500/20 rounded-xl">
-                         <div className="flex items-center justify-between mb-2">
-                           <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Plagiarism Alert</span>
-                           <span className="text-[10px] text-zinc-500 truncate max-w-[100px]" title={copied.source}>Source: {copied.source}</span>
-                         </div>
-                         <p className="text-xs text-zinc-400 italic">"{copied.text}"</p>
-                       </div>
-                     ))}
-                   </div>
-                 </section>
-               )}
-               
-               <button 
-                 onClick={() => setAnalysisResult(null)}
-                 className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded-xl transition-all"
-               >
-                 Close Analysis
-               </button>
-             </>
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                          <MapPin size={10} /> Location
+                        </label>
+                        <p className="text-[11px] text-zinc-400 leading-tight">{projectSummary.location.description}</p>
+                     </div>
+                     <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                          <AlertTriangle size={10} /> Proximity
+                        </label>
+                        <p className="text-[11px] text-amber-500/80 font-medium leading-tight">{projectSummary.location.sensitivity}</p>
+                     </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Key Environmental Risks</label>
+                    <div className="space-y-1.5">
+                      {projectSummary.impacts.map((impact: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-[11px] text-zinc-400">
+                          <div className="w-1 h-1 rounded-full bg-red-500/50 mt-1.5 flex-shrink-0"></div>
+                          <span>{impact}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Required Clearances</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {projectSummary.clearances.map((c: any, i: number) => (
+                        <div key={i} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-400 truncate mr-1">{c.name}</span>
+                          <span className="text-[9px] font-bold text-amber-500">{c.status[0]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+                    <label className="text-[9px] font-bold text-emerald-500/70 uppercase tracking-widest mb-1.5 block">AI Recommendation</label>
+                    <p className="text-xs text-zinc-300 font-medium italic">"{projectSummary.recommendation}"</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deep Analysis Action */}
+              {!analysisResult && !analyzing ? (
+                <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-5 text-center">
+                  <Zap className="mx-auto text-indigo-400 mb-2" size={24} />
+                  <h4 className="text-xs font-bold text-white mb-1">Deep Document Forensic</h4>
+                  <p className="text-[10px] text-zinc-400 mb-3 leading-snug">Run deep analysis on {selectedDoc.name} for plagiarism & compliance gaps.</p>
+                  <button 
+                    onClick={handleAnalyze}
+                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-indigo-900/40"
+                  >
+                    Run Deep Analysis
+                  </button>
+                </div>
+              ) : analyzing ? (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
+                  <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                  <p className="text-xs text-zinc-300 font-bold uppercase tracking-widest animate-pulse">Running Forensic Analysis...</p>
+                </div>
+              ) : (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden animate-in slide-in-from-right duration-500">
+                  <div className="bg-indigo-600/20 p-3 border-b border-zinc-800 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Deep Analysis: {selectedDoc.name}</span>
+                    <button onClick={() => setAnalysisResult(null)} className="text-zinc-500 hover:text-white">✕</button>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase">Integrity Score</span>
+                      <span className={`text-xs font-black ${analysisResult.score > 70 ? 'text-emerald-500' : 'text-amber-500'}`}>{analysisResult.score}%</span>
+                    </div>
+                    <div className="bg-zinc-950 p-3 rounded-lg border border-white/5">
+                      <p className="text-[11px] text-zinc-400 italic">"{analysisResult.summary}"</p>
+                    </div>
+                    
+                    {analysisResult.missingFiles?.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-red-500 uppercase tracking-widest">Missing Segments</label>
+                        {analysisResult.missingFiles.map((file: string, i: number) => (
+                           <div key={i} className="flex items-center gap-2 p-2 bg-red-500/5 rounded-lg border border-red-500/10">
+                              <AlertCircle size={10} className="text-red-500" />
+                              <span className="text-[10px] text-zinc-300">{file}</span>
+                           </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {analysisResult.copiedContent?.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-amber-500 uppercase tracking-widest">Plagiarism Detected</label>
+                        {analysisResult.copiedContent.map((item: any, i: number) => (
+                           <div key={i} className="p-2 bg-amber-500/5 rounded-lg border border-amber-500/10">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-[8px] font-bold text-amber-500 uppercase">Match Found</span>
+                                <span className="text-[8px] text-zinc-600 truncate">{item.source}</span>
+                              </div>
+                              <p className="text-[9px] text-zinc-400 italic leading-tight">"{item.text.substring(0, 100)}..."</p>
+                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
