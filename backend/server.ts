@@ -6,6 +6,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cors from "cors";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 // Load .env from current dir or parent dir
 dotenv.config({ path: [path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), '../.env')] });
@@ -552,8 +554,32 @@ async function startServer() {
   });
   
   // --- STATIC FILE SERVING FOR PRODUCTION ---
-  const __dirname = path.resolve();
-  const distPath = path.resolve(__dirname, process.cwd().endsWith('backend') ? '../frontend/dist' : 'frontend/dist');
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  
+  // Go up from backend/dist or backend/ (depending on how it's run) to find the root
+  let rootPath = path.resolve(__dirname, '..');
+  if (__dirname.endsWith('dist')) {
+    rootPath = path.resolve(__dirname, '../..');
+  }
+  
+  const distPath = path.resolve(rootPath, 'frontend/dist');
+  
+  console.log(`[Diagnostics] CWD: ${process.cwd()}`);
+  console.log(`[Diagnostics] __dirname: ${__dirname}`);
+  console.log(`[Diagnostics] rootPath: ${rootPath}`);
+  console.log(`[Diagnostics] distPath: ${distPath}`);
+  
+  if (fs.existsSync(distPath)) {
+    console.log(`[Diagnostics] distPath exists. Contents: ${fs.readdirSync(distPath).join(', ')}`);
+  } else {
+    console.warn(`[Diagnostics] distPath NOT FOUND: ${distPath}`);
+    // Try one more fallback: look for frontend/dist in current directory or parent
+    const fallbackPath = path.resolve(process.cwd(), 'frontend/dist');
+    if (fs.existsSync(fallbackPath)) {
+        console.log(`[Diagnostics] Found distPath via fallback: ${fallbackPath}`);
+    }
+  }
   
   app.use(express.static(distPath));
   
@@ -561,7 +587,12 @@ async function startServer() {
   app.get("*", (req: any, res: any) => {
     // Only serve index.html if it's not an API call
     if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send(`Frontend not found. Expected index.html at: ${indexPath}`);
+      }
     }
   });
 
