@@ -7,6 +7,7 @@ interface User {
   email: string;
   role: string;
   organization?: string;
+  created_at?: string;
 }
 
 interface AuthContextType {

@@ -23,7 +23,7 @@ import {
   BarChart,
   Radio,
   ChevronDown,
-  Settings,
+  Settings as SettingsIcon,
   User
 } from 'lucide-react';
 
@@ -35,6 +35,8 @@ import Login from './pages/Login';
 import ApplicantDashboard from './pages/ApplicantDashboard';
 import RegulatorDashboard from './pages/RegulatorDashboard';
 import CitizenDashboard from './pages/CitizenDashboard';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import Chatbot from './components/Chatbot';
 
 function Navigation() {
@@ -144,7 +146,7 @@ function Navigation() {
 
         {/* Nav links */}
         <div className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-          {filteredLinks.map((link, idx) => {
+          {filteredLinks.map((link) => {
             const isActive = location.pathname === link.path;
             const Icon = link.icon;
             const sectionLabel = sectionBreaks[link.path];
@@ -251,6 +253,8 @@ function TopHeader() {
     '/citizen/satellite': 'Satellite Analysis',
     '/citizen/comments': 'Public Complaints',
     '/citizen/reports': 'Transparency Logs',
+    '/profile': 'My Profile',
+    '/settings': 'Platform Settings',
   };
 
   const title = pageTitles[location.pathname] ?? 'Parivesh 3.0';
@@ -328,16 +332,16 @@ function TopHeader() {
                   </div>
                   <div className="p-1">
                     <button
-                      onClick={() => { setShowProfileMenu(false); alert('Profile management coming soon!'); }}
+                      onClick={() => { setShowProfileMenu(false); navigate('/profile'); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
                     >
                       <User size={14} /> My Profile
                     </button>
                     <button
-                      onClick={() => { setShowProfileMenu(false); alert('Settings coming soon!'); }}
+                      onClick={() => { setShowProfileMenu(false); navigate('/settings'); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
                     >
-                      <Settings size={14} /> Settings
+                      <SettingsIcon size={14} /> Settings
                     </button>
                     <div className="h-px bg-white/5 my-1" />
                     <button
@@ -417,10 +421,21 @@ function AppContent() {
               <ApplicantDashboard />
             </ProtectedRoute>
           } />
-          
-          <Route path="/regulator/*" element={
+                    <Route path="/regulator/*" element={
             <ProtectedRoute allowedRoles={['Regulator']}>
               <RegulatorDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           } />
         </Routes>
