@@ -657,16 +657,29 @@ async function startServer() {
              summary: "Mock verification run."
          });
       }
-      const { documentText } = req.body;
+      const { pdfUrl } = req.body;
       const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-      const safeText = documentText || "";
+      
+      // Simulation: Realistic document text based on the filename
+      const documentText = `This is a sample text extracted from ${pdfUrl}. 
+      The water usage projection for this project is estimated at 50,000 liters per day. 
+      However, the local hydrology study suggests a limit of 30,000 liters. 
+      This project follows the Buffer Zone guidelines established in the 2006 EIA notification.
+      (Note: This is simulated text for AI analysis demo).`;
+
       const response = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{
           role: "user",
-          content: `You are an AI document verification system for EIA reports. Analyze this document excerpt: "${safeText.substring(0, 5000)}..."
-        Identify missing standard EIA appendices, detect potentially repetitive/generic copied text, and score the integrity.
-        Return JSON object: { "missingFiles": ["file1"], "duplicateSections": ["sec1"], "copiedContent": ["desc1"], "overallIntegrityScore": 80, "summary": "Brief explanation" }`
+          content: `You are an AI document verification system for EIA reports. Analyze this document excerpt: "${documentText}"
+        Identify missing standard EIA appendices, detect potentially generic/plagiarized text, and score the integrity.
+        Return JSON object with these EXACT keys: 
+        { 
+          "missingFiles": ["List of missing required documents"], 
+          "copiedContent": [{ "text": "The plagiarized text", "source": "Source Name" }], 
+          "score": 85, 
+          "summary": "Brief explanation of the assessment" 
+        }`
         }],
         response_format: { type: "json_object" }
       });
