@@ -4,7 +4,7 @@
 
 # EcoTrack — Environmental Clearance Portal
 
-EcoTrack (PARIVESH 3.0) is a next-generation environmental clearance platform designed for the Ministry of Environment, Forest and Climate Change (MoEFCC), Government of India. It leverages Gemini AI to offer intelligent risk analysis, automated report summaries, and transparent public monitoring.
+EcoTrack (PARIVESH 3.0) is a next-generation environmental clearance platform designed for the Ministry of Environment, Forest and Climate Change (MoEFCC), Government of India. It leverages Groq AI to offer intelligent risk analysis, automated report summaries, and transparent public monitoring.
 
 ## 🚀 Features
 
@@ -35,8 +35,8 @@ EcoTrack (PARIVESH 3.0) is a next-generation environmental clearance platform de
 3. **Configure Environment Variables**:
    Create a `.env` file in the `backend` directory:
    ```env
-   GEMINI_API_KEY=your_gemini_api_key
-   JWT_SECRET=your_secure_jwt_secret
+   GROQ_API_KEY=your_groq_key_here
+   JWT_SECRET=your_jwt_secret
    ```
 4. **Run the App**:
    ```bash

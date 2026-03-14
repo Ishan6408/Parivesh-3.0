@@ -148,7 +148,7 @@ export default function ImpactAnalytics() {
             <div>
               <h3 className="text-base font-bold text-white mb-1">AI Resource Optimizer — Active</h3>
               <p className="text-sm text-zinc-400 leading-relaxed max-w-lg">
-                Gemini AI is monitoring cumulative regional thresholds across all approved projects to prevent ecological tipping points.
+                Groq AI is monitoring cumulative regional thresholds across all approved projects to prevent ecological tipping points.
               </p>
             </div>
           </div>

@@ -115,7 +115,7 @@ export default function Login() {
                <span className="gradient-text">Environmental Future</span>
              </h1>
              <p className="text-zinc-400 text-lg leading-relaxed max-w-lg">
-               End-to-end environmental clearance management powered by Gemini AI — from risk analysis to public transparency.
+               End-to-end environmental clearance management powered by Groq AI — from risk analysis to public transparency.
              </p>
            </div>
  
