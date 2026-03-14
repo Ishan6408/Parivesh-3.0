@@ -568,7 +568,7 @@ function PublicComments() {
 function EnvironmentalReports() {
   const handleDownload = (reportName: string) => {
     // Mock download flow
-    const dummyContent = `EcoTrack - Environmental Report\nReport: ${reportName}\nDate: ${new Date().toLocaleDateString()}\nStatus: Verified\n\nThis is a simulated environmental transparency report generated for demonstration purposes.`;
+    const dummyContent = `Parivesh 3.0 - Environmental Report\nReport: ${reportName}\nDate: ${new Date().toLocaleDateString()}\nStatus: Verified\n\nThis is a simulated environmental transparency report generated for demonstration purposes.`;
     const blob = new Blob([dummyContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

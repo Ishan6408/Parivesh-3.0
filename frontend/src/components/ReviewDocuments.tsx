@@ -46,7 +46,7 @@ export default function ReviewDocuments() {
         <div className="flex gap-3">
           <button 
             onClick={() => {
-              const content = `EcoTrack Document Export\nProject: Solar Park Alpha\nDocument: ${selectedDoc.name}\nGenerated: ${new Date().toLocaleString()}`;
+              const content = `Parivesh 3.0 Document Export\nProject: Solar Park Alpha\nDocument: ${selectedDoc.name}\nGenerated: ${new Date().toLocaleString()}`;
               const blob = new Blob([content], { type: 'text/plain' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');

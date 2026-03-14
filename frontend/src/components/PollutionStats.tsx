@@ -99,7 +99,7 @@ export default function PollutionStats() {
       <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
         <h3 className="text-lg font-bold text-emerald-400 mb-2">Transparency Pledge</h3>
         <p className="text-sm text-emerald-500/80 max-w-2xl mx-auto">
-          All data displayed above is automatically aggregated from calibrated IoT sensors and verified by AI. EcoTrack guarantees zero human manipulation of this public data feed.
+          All data displayed above is automatically aggregated from calibrated IoT sensors and verified by AI. Parivesh 3.0 guarantees zero human manipulation of this public data feed.
         </p>
       </div>
     </div>

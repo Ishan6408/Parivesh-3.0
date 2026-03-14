@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
+
+
 import { API_BASE_URL } from '../config';
 import { MapContainer, TileLayer, Marker, Popup, Circle, LayersControl, LayerGroup, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { AlertTriangle, CheckCircle2, Info, Map as MapIcon, Trees, Bird, Waves, Users, Factory, ChevronRight, Filter } from 'lucide-react';
+import { Trees, Bird, Waves, Users, Factory, ChevronRight, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // Fix Leaflet default icon issue
@@ -81,6 +83,23 @@ export default function RegulatorMap() {
     );
   }
 
+  // Mock Ecological Data with better spatial distribution
+  const ECOLOGICAL_DATA = {
+    forests: [
+      { name: 'Western Ghats Reserved Forest', coords: [15.5, 74.5] as [number, number], radius: 25000 },
+      { name: 'Sundarbans Mangrove Zone', coords: [21.9, 88.9] as [number, number], radius: 40000 },
+      { name: 'Gir Conservation Forest', coords: [21.1, 70.8] as [number, number], radius: 30000 },
+    ],
+    protectedAreas: [
+      { name: 'Silent Valley National Park', coords: [11.1, 76.4] as [number, number], radius: 15000 },
+      { name: 'Jim Corbett Buffer Zone', coords: [29.5, 78.8] as [number, number], radius: 20000 },
+    ],
+    villages: [
+      { name: 'Amboli Settlement', coords: [15.9, 74.0] as [number, number], pop: 1200 },
+      { name: 'Khatra Tribal Village', coords: [22.9, 86.8] as [number, number], pop: 850 },
+    ]
+  };
+
   return (
     <div className="h-[calc(100vh-120px)] w-full relative rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl">
       <MapContainer 
@@ -95,42 +114,49 @@ export default function RegulatorMap() {
         />
 
         <LayersControl position="topright">
-          <LayersControl.Overlay name="Forest Cover" checked>
+          <LayersControl.Overlay checked name="Reserved Forests">
             <LayerGroup>
-              <Circle center={[20, 80]} radius={150000} pathOptions={{ color: 'green', fillColor: 'green', fillOpacity: 0.2 }} />
-              <Circle center={[25, 90]} radius={200000} pathOptions={{ color: 'green', fillColor: 'green', fillOpacity: 0.2 }} />
+              {ECOLOGICAL_DATA.forests.map((f, i) => (
+                <Circle key={i} center={f.coords} radius={f.radius} pathOptions={{ color: '#059669', fillColor: '#059669', fillOpacity: 0.1, weight: 1 }}>
+                  <Popup><span className="font-bold text-emerald-400">Forest:</span> {f.name}</Popup>
+                </Circle>
+              ))}
             </LayerGroup>
           </LayersControl.Overlay>
 
-          <LayersControl.Overlay name="Wildlife Sanctuaries">
+          <LayersControl.Overlay checked name="Protected Areas">
             <LayerGroup>
-              <Polygon positions={[[23, 75], [24, 76], [23, 77]]} pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.3 }} />
-              <Polygon positions={[[15, 75], [16, 76], [15, 77]]} pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.3 }} />
+              {ECOLOGICAL_DATA.protectedAreas.map((p, i) => (
+                <Circle key={i} center={p.coords} radius={p.radius} pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.15, dashArray: '5, 5' }}>
+                  <Popup><span className="font-bold text-red-400">Protected Area:</span> {p.name}</Popup>
+                </Circle>
+              ))}
             </LayerGroup>
           </LayersControl.Overlay>
 
-          <LayersControl.Overlay name="Rivers & Wetlands">
+          <LayersControl.Overlay name="Human Settlements">
             <LayerGroup>
-              <Circle center={[22, 85]} radius={100000} pathOptions={{ color: 'blue', fillColor: 'blue', fillOpacity: 0.2 }} />
+              {ECOLOGICAL_DATA.villages.map((v, i) => (
+                <Marker key={i} position={v.coords}>
+                  <Popup><span className="font-bold text-blue-400">Village:</span> {v.name}<br/><span className="text-zinc-500">Pop: {v.pop}</span></Popup>
+                </Marker>
+              ))}
             </LayerGroup>
           </LayersControl.Overlay>
 
-          <LayersControl.Overlay name="Population Density">
+          <LayersControl.Overlay name="Industrial Clusters">
             <LayerGroup>
-              <Circle center={[19, 73]} radius={80000} pathOptions={{ color: 'purple', fillColor: 'purple', fillOpacity: 0.1 }} />
-              <Circle center={[28, 77]} radius={80000} pathOptions={{ color: 'purple', fillColor: 'purple', fillOpacity: 0.1 }} />
-            </LayerGroup>
-          </LayersControl.Overlay>
-
-          <LayersControl.Overlay name="Pollution Sensitive Zones">
-            <LayerGroup>
-              <Circle center={[22, 72]} radius={120000} pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.15, dashArray: '5, 5' }} />
+              <Circle center={[22.5, 72.5]} radius={150000} pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.2, weight: 1 }} />
+              <Circle center={[13, 80]} radius={120000} pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.2, weight: 1 }} />
             </LayerGroup>
           </LayersControl.Overlay>
         </LayersControl>
 
+
+
         {filteredProjects.map((project) => (
-          <React.Fragment key={project.id}>
+          <Fragment key={project.id}>
+
             <Marker 
               position={[project.lat, project.lng]}
               icon={createCustomIcon(getRiskColor(project.riskScore))}
@@ -172,20 +198,54 @@ export default function RegulatorMap() {
                 </div>
               </Popup>
             </Marker>
+            {/* Project KML Boundary Visualization (Mocked as a polygon around the center) */}
+            <Polygon 
+              positions={[
+                [project.lat + 0.1, project.lng - 0.1],
+                [project.lat + 0.1, project.lng + 0.1],
+                [project.lat - 0.1, project.lng + 0.1],
+                [project.lat - 0.1, project.lng - 0.1]
+              ]}
+              pathOptions={{
+                color: '#FF9933',
+                fillColor: '#FF9933',
+                fillOpacity: 0.15,
+                weight: 2,
+                dashArray: '8, 8'
+              }}
+            />
+
             {/* Impact Radius Visualization */}
-            <Circle 
-              center={[project.lat, project.lng]} 
-              radius={project.riskScore * 500} 
+            {/* Project Boundary Polygon (Synthetic) */}
+            <Polygon 
+              positions={[
+                [project.lat + 0.015, project.lng - 0.015],
+                [project.lat + 0.015, project.lng + 0.015],
+                [project.lat - 0.015, project.lng + 0.015],
+                [project.lat - 0.015, project.lng - 0.015]
+              ]}
               pathOptions={{ 
                 color: getRiskColor(project.riskScore), 
                 fillColor: getRiskColor(project.riskScore), 
-                fillOpacity: 0.05,
-                weight: 1,
-                dashArray: '5, 10'
+                fillOpacity: 0.25,
+                weight: 2
               }} 
             />
-          </React.Fragment>
+            {/* Impact Radius */}
+            <Circle 
+              center={[project.lat, project.lng]} 
+              radius={8000} 
+              pathOptions={{ 
+                color: '#ffffff', 
+                fillColor: 'transparent', 
+                weight: 1, 
+                dashArray: '5, 10',
+                opacity: 0.3
+              }} 
+            />
+          </Fragment>
         ))}
+
       </MapContainer>
 
       {/* Filter Panel Overlay */}

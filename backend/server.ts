@@ -8,13 +8,19 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import multer from "multer";
+
 
 // Load .env from current dir or parent dir
-dotenv.config({ path: [path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), '../.env')] });
+// Load .env
+dotenv.config();
+if (fs.existsSync('../.env')) {
+  dotenv.config({ path: '../.env' });
+}
 
-const db = new Database("ecotrack.db");
+const db = new Database("parivesh3.db");
 
-const JWT_SECRET = process.env.JWT_SECRET || "ecotrack_super_secret_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET || "parivesh3_super_secret_key_2026";
 
 // Initialize DB schema
 db.exec(`
@@ -75,6 +81,28 @@ db.exec(`
     message TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    projectId INTEGER,
+    documentType TEXT,
+    fileName TEXT,
+    filePath TEXT,
+    status TEXT DEFAULT 'Uploaded',
+    uploadedBy TEXT,
+    uploadedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS deficiencies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    projectId INTEGER,
+    item TEXT,
+    comment TEXT,
+    status TEXT DEFAULT 'Pending',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+
 `);
 
 // Seed some initial data if empty
@@ -92,7 +120,7 @@ if (userCount.count === 0) {
   const salt = bcrypt.genSaltSync(10);
   const hash = bcrypt.hashSync("password123", salt);
   const insertUser = db.prepare("INSERT INTO users (name, email, password_hash, role, organization) VALUES (?, ?, ?, ?, ?)");
-  insertUser.run("Admin User", "admin@ecotrack.com", hash, "Regulator", "Ministry of Environment");
+  insertUser.run("Admin User", "admin@parivesh3.com", hash, "Regulator", "Ministry of Environment");
   insertUser.run("Test Applicant", "applicant@test.com", hash, "Applicant", "Test Corp");
   insertUser.run("Test Regulator", "regulator@test.com", hash, "Regulator", "Ministry");
   insertUser.run("Test Citizen", "citizen@test.com", hash, "Citizen", "Public");
@@ -134,6 +162,8 @@ async function startServer() {
       const { name, email, password, role, organization } = req.body;
       
       const allowedRoles = ['Applicant', 'Regulator', 'Citizen'];
+      const allowedStatuses = ['Draft', 'Submitted', 'Under review', 'Deficiency raised', 'Applicant response', 'Committee review', 'Approved', 'Rejected'];
+
       if (!allowedRoles.includes(role)) {
         return res.status(400).json({ error: "Invalid role selected" });
       }
@@ -233,7 +263,7 @@ async function startServer() {
       }
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: `Analyze the following environmental project description and provide a highly accurate risk score from 0 to 100 (where 100 is highest environmental risk) based on the provided metrics. Provide a brief 3-sentence summary of the risks regarding deforestation, water depletion, pollution, and wildlife impact. Factor in the distance to protected areas heavily.
         
         Project Title: ${title}
@@ -323,6 +353,139 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // --- DOCUMENT UPLOAD SYSTEM ---
+  
+  // Configure Multer
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = 'uploads';
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+
+  const upload = multer({ 
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+      const allowed = ['.pdf', '.png', '.jpg', '.jpeg', '.doc', '.docx'];
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (allowed.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Invalid file type. Only PDF, PNG, JPG, DOC, DOCX allowed."));
+      }
+    }
+  });
+
+  app.post("/api/documents/upload", authenticateToken, upload.single('file'), (req: any, res: any) => {
+    try {
+      const { applicationId, documentType } = req.body;
+      const file = req.file;
+
+      if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+      // Clean up previous uploads of same type for this project
+      const deleteOld = db.prepare("DELETE FROM documents WHERE projectId = ? AND documentType = ?");
+      deleteOld.run(applicationId, documentType);
+
+      const insert = db.prepare(`
+        INSERT INTO documents (projectId, documentType, fileName, filePath, uploadedBy) 
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      insert.run(applicationId, documentType, file.originalname, file.path, req.user.name);
+
+      res.status(201).json({ success: true, message: "Document uploaded successfully" });
+    } catch (error: any) {
+      console.error("Upload Error:", error);
+      res.status(500).json({ error: error.message || "Upload failed" });
+    }
+  });
+
+  app.get("/api/projects/:id/documents", authenticateToken, (req: any, res: any) => {
+    const docs = db.prepare("SELECT * FROM documents WHERE projectId = ?").all(req.params.id);
+    res.json(docs);
+  });
+
+  app.put("/api/documents/:id/status", authenticateToken, authorizeRoles('Regulator'), (req: any, res: any) => {
+    const { status } = req.body;
+    const update = db.prepare("UPDATE documents SET status = ? WHERE id = ?");
+    update.run(status, req.params.id);
+    res.json({ success: true });
+  });
+
+  // --- DEFICIENCY SYSTEM (EDS) ---
+  
+  app.post("/api/projects/:id/deficiencies", authenticateToken, authorizeRoles('Regulator'), (req: any, res: any) => {
+    const { items, comment } = req.body;
+    const projectId = req.params.id;
+
+    const insertDecision = db.prepare("INSERT INTO decisions (projectId, status, comment) VALUES (?, ?, ?)");
+    insertDecision.run(projectId, 'Deficiency raised', comment);
+
+    const updateProject = db.prepare("UPDATE projects SET status = 'Deficiency raised' WHERE id = ?");
+    updateProject.run(projectId);
+
+    const insertDeficiency = db.prepare("INSERT INTO deficiencies (projectId, item, comment) VALUES (?, ?, ?)");
+    for (const item of items) {
+      insertDeficiency.run(projectId, item, comment);
+    }
+
+    res.json({ success: true });
+  });
+
+  app.get("/api/projects/:id/deficiencies", authenticateToken, (req: any, res: any) => {
+    const deficiencies = db.prepare("SELECT * FROM deficiencies WHERE projectId = ?").all(req.params.id);
+    res.json(deficiencies);
+  });
+
+  app.patch("/api/deficiencies/:id/status", authenticateToken, (req: any, res: any) => {
+    const { status } = req.body;
+    const update = db.prepare("UPDATE deficiencies SET status = ? WHERE id = ?");
+    update.run(status, req.params.id);
+    res.json({ success: true });
+  });
+
+  app.get("/api/deficiencies", authenticateToken, (req: any, res: any) => {
+    let deficiencies;
+    if (req.user.role === 'Applicant') {
+      deficiencies = db.prepare(`
+        SELECT d.*, p.title as projectName 
+        FROM deficiencies d 
+        JOIN projects p ON d.projectId = p.id 
+        WHERE p.applicant = ?
+      `).all(req.user.organization); // Assuming applicant is stored as organization name
+    } else {
+      deficiencies = db.prepare(`
+        SELECT d.*, p.title as projectName 
+        FROM deficiencies d 
+        JOIN projects p ON d.projectId = p.id
+      `).all();
+    }
+    res.json(deficiencies);
+  });
+
+  app.get("/api/stats/deficiencies", authenticateToken, (req: any, res: any) => {
+
+    const stats = db.prepare(
+      "SELECT " +
+      "COUNT(*) as total, " +
+      "SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending, " +
+      "SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved " +
+      "FROM deficiencies"
+    ).get();
+    res.json(stats);
+  });
+
+  // Serve uploads statically
+
+  app.use('/uploads', express.static('uploads'));
+
+
   // AI Routes
   app.post("/api/ai/analyze-risk", authenticateToken, authorizeRoles('Regulator', 'Applicant'), async (req: any, res: any) => {
     try {
@@ -332,7 +495,7 @@ async function startServer() {
       const { description } = req.body;
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: `Analyze the following environmental project description and provide a risk score from 0 to 100 (where 100 is highest risk) and a brief 2-sentence summary of the risks regarding deforestation, water, and wildlife.
         
         Project Description: ${description}
@@ -376,8 +539,8 @@ async function startServer() {
       const { message, language } = req.body;
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const stream = await ai.models.generateContentStream({
-        model: "gemini-1.5-flash",
-        contents: `You are the Official AI Assistant for EcoTrack (PARIVESH 3.0), the environmental clearance portal for the Ministry of Environment, Forest and Climate Change (MoEFCC), Government of India.
+        model: "gemini-2.5-flash",
+        contents: `You are the Official AI Assistant for Parivesh 3.0 (PARIVESH 3.0), the environmental clearance portal for the Ministry of Environment, Forest and Climate Change (MoEFCC), Government of India.
         
         Your role is to assist project proponents, regulators, and citizens with queries related to Environmental Impact Assessments (EIA), Forest Clearances, Wildlife Clearances, Coastal Regulation Zone (CRZ) rules, and pollution control norms.
         
@@ -419,8 +582,8 @@ async function startServer() {
       const { idea } = req.body;
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: `You are the EcoTrack Permit Advisor AI. The user has an idea for a project in India: "${idea}".
+        model: "gemini-2.5-flash",
+        contents: `You are the Parivesh 3.0 Permit Advisor AI. The user has an idea for a project in India: "${idea}".
         List the required environmental approvals (e.g., Environmental Clearance, Forest Clearance, Wildlife Clearance, CRZ Clearance, Consent to Establish/Operate).
         Return purely a JSON object: { "approvals": ["Approval 1", "Approval 2"], "advice": "Brief reasoning." }`,
         config: { responseMimeType: "application/json" }
@@ -442,7 +605,7 @@ async function startServer() {
       const { projectData } = req.body;
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: `As an Environmental AI, predict pollution risks for: ${JSON.stringify(projectData)}.
         Return a JSON object: { "air": <0-100 risk score>, "water": <0-100 risk score>, "co2": <estimated tons per year>, "summary": "Short explanation" }`,
         config: { responseMimeType: "application/json" }
@@ -464,7 +627,7 @@ async function startServer() {
       const { transcript } = req.body;
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: `Summarize this environmental review meeting transcript into concise action items and key decisions: "${transcript}"`
       });
       res.json({ summary: response.text });
@@ -487,9 +650,10 @@ async function startServer() {
       }
       const { documentText } = req.body;
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const safeText = documentText || "";
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: `You are an AI document verification system for EIA reports. Analyze this document excerpt: "${documentText.substring(0, 5000)}..."
+        model: "gemini-2.5-flash",
+        contents: `You are an AI document verification system for EIA reports. Analyze this document excerpt: "${safeText.substring(0, 5000)}..."
         Identify missing standard EIA appendices, detect potentially repetitive/generic copied text, and score the integrity.
         Return JSON object: { "missingFiles": ["file1"], "duplicateSections": ["sec1"], "copiedContent": ["desc1"], "overallIntegrityScore": 80, "summary": "Brief explanation" }`,
         config: { responseMimeType: "application/json" }
@@ -511,7 +675,7 @@ async function startServer() {
       const { evidenceDesc, complaintText } = req.body;
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: `You are an AI Complaint Verification assistant for a public environmental portal.
         A citizen submitted a complaint with text: "${complaintText}" and described the evidence (e.g. photo details) as: "${evidenceDesc}".
         Evaluate the coherence and logical validity of this complaint.

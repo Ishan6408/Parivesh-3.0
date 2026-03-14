@@ -78,7 +78,7 @@ export default function Login() {
               <Leaf size={22} className="text-emerald-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold text-white tracking-tight leading-none">EcoTrack</span>
+              <span className="text-xl font-bold text-white tracking-tight leading-none">Parivesh 3.0</span>
               <span className="text-[10px] text-emerald-500/60 font-bold uppercase tracking-widest mt-1">v2.4 Stable</span>
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function Login() {
                ))}
              </div>
              <div className="text-[11px] text-zinc-600 font-medium">
-               © 2026 EcoTrack · Ministry of Environment & Forests (Mock)
+               © 2026 Parivesh 3.0 · Ministry of Environment & Forests (Mock)
              </div>
            </div>
            
@@ -187,7 +187,7 @@ export default function Login() {
               <Leaf size={20} className="text-emerald-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-white tracking-tight leading-none">EcoTrack</span>
+              <span className="text-lg font-bold text-white tracking-tight leading-none">Parivesh 3.0</span>
               <span className="text-[9px] text-emerald-500/60 font-bold uppercase tracking-widest mt-1">v2.4 Stable</span>
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function Login() {
           </form>
 
           <p className="text-center text-xs text-zinc-700">
-            By continuing you agree to EcoTrack's Environmental Data Policy.
+            By continuing you agree to Parivesh 3.0's Environmental Data Policy.
           </p>
         </motion.div>
       </div>
