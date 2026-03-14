@@ -92,10 +92,11 @@ export default function ReviewDocuments() {
     setAnalyzing(true);
     setAnalysisResult(null);
     try {
+      if (!selectedDoc) return;
       const res = await fetch(`${API_BASE_URL}/api/ai/analyze-document`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ pdfUrl: selectedDoc.name })
+        body: JSON.stringify({ pdfUrl: selectedDoc.fileName || selectedDoc.name })
       });
       const data = await res.json();
       setAnalysisResult(data);
@@ -172,7 +173,7 @@ export default function ReviewDocuments() {
         <div className="lg:col-span-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl overflow-hidden flex flex-col relative shadow-2xl backdrop-blur-xl">
           <div className="bg-zinc-950/50 border-b border-zinc-800/50 p-2.5 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Document View: {selectedDoc.name}</span>
+              <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Document View: {selectedDoc?.fileName || selectedDoc?.name || 'Loading...'}</span>
             </div>
             <div className="flex items-center gap-2">
               <button className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-500"><Search size={14} /></button>
@@ -290,8 +291,9 @@ export default function ReviewDocuments() {
                 <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-5 text-center">
                   <Zap className="mx-auto text-indigo-400 mb-2" size={24} />
                   <h4 className="text-xs font-bold text-white mb-1">Deep Document Forensic</h4>
-                  <p className="text-[10px] text-zinc-400 mb-3 leading-snug">Run deep analysis on {selectedDoc.name} for plagiarism & compliance gaps.</p>
+                  <p className="text-[10px] text-zinc-400 mb-3 leading-snug">Run deep analysis on {selectedDoc?.fileName || selectedDoc?.name || 'this document'} for plagiarism & compliance gaps.</p>
                   <button 
+                    disabled={!selectedDoc}
                     onClick={handleAnalyze}
                     className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-indigo-900/40"
                   >
@@ -306,7 +308,7 @@ export default function ReviewDocuments() {
               ) : (
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden animate-in slide-in-from-right duration-500">
                   <div className="bg-indigo-600/20 p-3 border-b border-zinc-800 flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Deep Analysis: {selectedDoc.name}</span>
+                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Deep Analysis: {selectedDoc?.fileName || selectedDoc?.name}</span>
                     <button onClick={() => setAnalysisResult(null)} className="text-zinc-500 hover:text-white">✕</button>
                   </div>
                   <div className="p-4 space-y-4">
