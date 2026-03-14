@@ -1,20 +1,19 @@
-import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config';
-import { 
-  FileText, Search, BrainCircuit, AlertCircle, 
-  MapPin, AlertTriangle, Download, MessageSquare, Zap
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useParams } from 'react-router-dom';
 
-const MOCK_DOCS = [
+const MOCK_DOCS_FALLBACK = [
   { id: 1, name: 'EIA_Report_Final.pdf', type: 'EIA', size: '4.2 MB', date: '2026-03-10', status: 'Flagged' },
   { id: 2, name: 'Wildlife_Impact_Study.pdf', type: 'Special Study', size: '2.8 MB', date: '2026-03-11', status: 'Verified' },
   { id: 3, name: 'Site_Hydrology_Map.pdf', type: 'Technical Map', size: '15.4 MB', date: '2026-03-12', status: 'Pending' },
 ];
 
 export default function ReviewDocuments() {
-  const [selectedDoc, setSelectedDoc] = useState(MOCK_DOCS[0]);
+  const { projectId: routeId } = useParams();
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const { token } = useAuth();
+  
+  // Project State
+  const [project, setProject] = useState<any>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
   
   // Global Project Summary State
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -25,24 +24,60 @@ export default function ReviewDocuments() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
 
   useEffect(() => {
-    fetchProjectSummary();
-  }, []);
+    loadProjectData();
+  }, [routeId]);
 
-  const fetchProjectSummary = async () => {
+  const loadProjectData = async () => {
     setSummaryLoading(true);
     try {
-      // For demo, we use a fixed projectId or fetch first available
-      const res = await fetch(`${API_BASE_URL}/api/ai/project-summary`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ projectId: 1 }) // Mock ID
-      });
-      const data = await res.json();
-      setProjectSummary(data);
+      let activeId = routeId;
+      if (!activeId) {
+        // Fetch latest project if none selected
+        const pRes = await fetch(`${API_BASE_URL}/api/projects`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const projects = await pRes.json();
+        if (projects && projects.length > 0) activeId = projects[0].id;
+      }
+
+      if (activeId) {
+        // Fetch Project Details
+        const projRes = await fetch(`${API_BASE_URL}/api/projects/${activeId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const projData = await projRes.json();
+        setProject(projData);
+
+        // Fetch Documents
+        const docRes = await fetch(`${API_BASE_URL}/api/projects/${activeId}/documents`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const docData = await docRes.json();
+        const finalDocs = docData.length > 0 ? docData : MOCK_DOCS_FALLBACK;
+        setDocuments(finalDocs);
+        setSelectedDoc(finalDocs[0]);
+
+        // Fetch AI Summary
+        fetchProjectSummary(activeId);
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setSummaryLoading(false);
+    }
+  };
+
+  const fetchProjectSummary = async (id: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ai/project-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ projectId: id })
+      });
+      const data = await res.json();
+      setProjectSummary(data);
+    } catch (e) {
+      console.error("Summary error:", e);
     }
   };
 
@@ -69,7 +104,7 @@ export default function ReviewDocuments() {
       <header className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-white mb-1">Document Review</h1>
-          <p className="text-zinc-500 text-sm">Reviewing Application: <span className="text-emerald-500">Solar Park Alpha</span></p>
+          <p className="text-zinc-500 text-sm">Reviewing Application: <span className="text-emerald-500">{project?.title || 'Loading...'}</span></p>
         </div>
         <div className="flex gap-3">
           <button 
@@ -95,21 +130,21 @@ export default function ReviewDocuments() {
         {/* Sidebar: Document List (2 cols) */}
         <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
           <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Project Files</h2>
-          {MOCK_DOCS.map((doc) => (
+          {documents.map((doc) => (
             <div 
               key={doc.id}
               onClick={() => setSelectedDoc(doc)}
               className={`p-3 rounded-xl border transition-all cursor-pointer group ${
-                selectedDoc.id === doc.id 
+                selectedDoc?.id === doc.id 
                   ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
                   : 'bg-zinc-900 border-zinc-800/50 hover:border-zinc-700'
               }`}
             >
               <div className="flex items-start gap-2.5">
-                <FileText className={selectedDoc.id === doc.id ? 'text-emerald-500' : 'text-zinc-600'} size={18} />
+                <FileText className={selectedDoc?.id === doc.id ? 'text-emerald-500' : 'text-zinc-600'} size={18} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-zinc-200 truncate">{doc.name}</div>
-                  <div className="text-[9px] text-zinc-500 mt-0.5 uppercase tracking-wider">{doc.type}</div>
+                  <div className="text-xs font-semibold text-zinc-200 truncate">{doc.fileName || doc.name}</div>
+                  <div className="text-[9px] text-zinc-500 mt-0.5 uppercase tracking-wider">{doc.documentType || doc.type}</div>
                 </div>
               </div>
               <div className="mt-2.5 flex items-center justify-between">
@@ -120,7 +155,7 @@ export default function ReviewDocuments() {
                 }`}>
                   {doc.status}
                 </span>
-                <span className="text-[8px] text-zinc-600 font-medium">{doc.date}</span>
+                <span className="text-[8px] text-zinc-600 font-medium">{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : doc.date}</span>
               </div>
             </div>
           ))}

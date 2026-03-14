@@ -171,8 +171,14 @@ function RegulatorHome() {
                 )}
 
                 <div className="flex items-center justify-end gap-3">
-                  <button 
-                    onClick={() => handleStatusUpdate(project.id, 'Rejected')}
+                <button 
+                  onClick={() => navigate(`/regulator/review/${project.id}`)}
+                  className="px-4 py-2 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 rounded-lg text-xs font-bold transition-all border border-indigo-500/20"
+                >
+                  Deep Review
+                </button>
+                <button 
+                  onClick={() => handleStatusUpdate(project.id, 'Rejected')}
                     className="px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
                   >
                     Reject
@@ -260,7 +266,7 @@ export default function RegulatorDashboard() {
       <Route path="/" element={<RegulatorHome />} />
       <Route path="/pending" element={<PendingApplications />} />
       <Route path="/map" element={<RegulatorMap />} />
-      <Route path="/review" element={<ReviewDocuments />} />
+      <Route path="/review/:projectId?" element={<ReviewDocuments />} />
       <Route path="/decisions" element={<ApprovalDecisions />} />
       <Route path="/alerts" element={<RiskAlerts />} />
       <Route path="/impact" element={<ImpactAnalytics />} />

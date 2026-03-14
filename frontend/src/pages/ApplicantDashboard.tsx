@@ -33,6 +33,7 @@ function SubmitProject() {
 
   const [step, setStep] = useState(1);
   const [agreedPoints, setAgreedPoints] = useState<Record<string, boolean>>({});
+  const [fileObjects, setFileObjects] = useState<Record<string, File>>({});
 
   const COMPLIANCE_POINTS = [
     { id: 'c1', text: 'Topsoil extracted from the project area will be preserved and stored properly.' },
@@ -94,7 +95,25 @@ function SubmitProject() {
           lng: parseFloat(form.lng) || 78.9 
         }),
       });
-      if (res.ok) { setUploadProgress(100); setTimeout(() => setSubmitted(true), 400); }
+      const projData = await res.json();
+      
+      if (res.ok && projData.id) {
+        // Now upload the actual files linked to this project ID
+        for (const [docId, file] of Object.entries(fileObjects)) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('applicationId', projData.id.toString());
+          formData.append('documentType', docId);
+          
+          await fetch(`${API_BASE_URL}/api/documents/upload`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData
+          });
+        }
+        setUploadProgress(100); 
+        setTimeout(() => setSubmitted(true), 400); 
+      }
     } finally {
       clearInterval(tick);
       setIsUploading(false);
@@ -102,16 +121,35 @@ function SubmitProject() {
   };
 
 
-  const handleFileUpload = (docId: string, fileName: string) => {
+  const handleFileUpload = async (docId: string, file: File) => {
     setIsUploading(true);
-    setUploadProgress(0);
-    const tick = setInterval(() => setUploadProgress(p => Math.min(p + 20, 95)), 100);
-    setTimeout(() => {
-      clearInterval(tick);
-      setUploadedDocs(prev => ({ ...prev, [docId]: fileName }));
-      setIsUploading(false);
-      setUploadProgress(100);
-    }, 800);
+    setUploadProgress(10);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      // We don't have applicationId yet in Step 1, so we'll store it in a temporary state
+      // or just simulate the upload if no project created yet.
+      // But typically, projects are created AFTER docs are selected? 
+      // No, in my flow, project is created in handleManualSubmit.
+      
+      // Let's store the actual File objects to upload them when project is created.
+      setFileObjects(prev => ({ ...prev, [docId]: file }));
+      
+      // Simulation for the individual progress bar
+      let prog = 10;
+      const tick = setInterval(() => {
+        prog = Math.min(prog + 20, 100);
+        setUploadProgress(prog);
+        if (prog >= 100) clearInterval(tick);
+      }, 100);
+
+      setUploadedDocs(prev => ({ ...prev, [docId]: file.name }));
+      setTimeout(() => setIsUploading(false), 600);
+    } catch (error) {
+       console.error("Upload simulation error:", error);
+       setIsUploading(false);
+    }
   };
 
   if (submitted) return (
@@ -219,7 +257,7 @@ function SubmitProject() {
                         UPLOAD
                         <input type="file" className="hidden" onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleFileUpload(doc.id, file.name);
+                          if (file) handleFileUpload(doc.id, file);
                         }} />
                       </label>
                     )}
