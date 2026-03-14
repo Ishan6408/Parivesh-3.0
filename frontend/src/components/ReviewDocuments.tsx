@@ -1,3 +1,10 @@
+import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
+import { 
+  FileText, Search, BrainCircuit, AlertCircle, 
+  MapPin, AlertTriangle, Download, MessageSquare, Zap
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useParams } from 'react-router-dom';
 
 const MOCK_DOCS_FALLBACK = [
