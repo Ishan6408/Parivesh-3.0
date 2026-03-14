@@ -117,7 +117,7 @@ export default function ReviewDocuments() {
         <div className="flex gap-3">
           <button 
             onClick={() => {
-              const content = `Parivesh 3.0 Document Export\nProject: Solar Park Alpha\nDocument: ${selectedDoc.name}\nGenerated: ${new Date().toLocaleString()}`;
+              const content = `Parivesh 3.0 Document Export\nProject: Solar Park Alpha\nDocument: ${selectedDoc?.fileName || selectedDoc?.name || 'Unknown'}\nGenerated: ${new Date().toLocaleString()}`;
               const blob = new Blob([content], { type: 'text/plain' });
               const url = URL.createObjectURL(blob);
               window.open(url, '_blank');
@@ -151,7 +151,7 @@ export default function ReviewDocuments() {
               <div className="flex items-start gap-2.5">
                 <FileText className={selectedDoc?.id === doc.id ? 'text-emerald-500' : 'text-zinc-600'} size={18} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-zinc-200 truncate">{doc.fileName || doc.name}</div>
+                  <div className="text-xs font-semibold text-zinc-200 truncate">{doc?.fileName || doc?.name}</div>
                   <div className="text-[9px] text-zinc-500 mt-0.5 uppercase tracking-wider">{doc.documentType || doc.type}</div>
                 </div>
               </div>
@@ -258,7 +258,7 @@ export default function ReviewDocuments() {
                   <div className="space-y-2.5">
                     <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Key Environmental Risks</label>
                     <div className="space-y-1.5">
-                      {projectSummary.impacts.map((impact: string, i: number) => (
+                      {projectSummary.impacts && Array.isArray(projectSummary.impacts) && projectSummary.impacts.map((impact: string, i: number) => (
                         <div key={i} className="flex items-start gap-2 text-[11px] text-zinc-400">
                           <div className="w-1 h-1 rounded-full bg-red-500/50 mt-1.5 flex-shrink-0"></div>
                           <span>{impact}</span>
@@ -270,10 +270,10 @@ export default function ReviewDocuments() {
                   <div className="space-y-3">
                     <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Required Clearances</label>
                     <div className="grid grid-cols-2 gap-2">
-                      {projectSummary.clearances.map((c: any, i: number) => (
+                      {projectSummary.clearances && Array.isArray(projectSummary.clearances) && projectSummary.clearances.map((c: any, i: number) => (
                         <div key={i} className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-between">
-                          <span className="text-[10px] text-zinc-400 truncate mr-1">{c.name}</span>
-                          <span className="text-[9px] font-bold text-amber-500">{c.status[0]}</span>
+                           <span className="text-[10px] text-zinc-400 truncate mr-1">{c?.name || 'General Clearance'}</span>
+                           <span className="text-[9px] font-bold text-amber-500">{c?.status?.[0] || 'P'}</span>
                         </div>
                       ))}
                     </div>
