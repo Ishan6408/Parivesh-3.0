@@ -1,8 +1,6 @@
 <div align="center">
-  <img width="1200" alt="PARIVESH 3.0 Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-  
-  # 🇮🇳 PARIVESH 3.0
-  ### Next-Generation Environmental Clearance & Monitoring Portal
+  <h1>🇮🇳 PARIVESH 3.0</h1>
+  <h3>Next-Generation Environmental Clearance & Monitoring Portal</h3>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![React](https://img.shields.io/badge/Frontend-React%2018-blue)](https://reactjs.org/)
