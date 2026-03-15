@@ -1,66 +1,126 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img width="1200" alt="PARIVESH 3.0 Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  
+  # 🇮🇳 PARIVESH 3.0
+  ### Next-Generation Environmental Clearance & Monitoring Portal
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![React](https://img.shields.io/badge/Frontend-React%2018-blue)](https://reactjs.org/)
+  [![Node.js](https://img.shields.io/badge/Backend-Node.js-green)](https://nodejs.org/)
+  [![Groq AI](https://img.shields.io/badge/AI-Groq%20Cloud-orange)](https://groq.com/)
+  [![Tailwind CSS](https://img.shields.io/badge/Styles-Tailwind%20CSS-38B2AC)](https://tailwindcss.com/)
 </div>
 
-# EcoTrack — Environmental Clearance Portal
+---
 
-EcoTrack (PARIVESH 3.0) is a next-generation environmental clearance platform designed for the Ministry of Environment, Forest and Climate Change (MoEFCC), Government of India. It leverages Groq AI to offer intelligent risk analysis, automated report summaries, and transparent public monitoring.
+## 📖 Overview
 
-## 🚀 Features
+**PARIVESH 3.0** (Pro-Active and Responsive facilitation by Interactive, Virtuous and Environmental Single-window Hub) is a unified platform designed for the **Ministry of Environment, Forest and Climate Change (MoEFCC)**, Government of India. 
 
-- **AI Risk Scoring**: Automatic environmental risk assessment for projects based on topography, pollution metrics, and forest impact.
-- **Satellite Comparison**: Interactive "Before vs After" satellite imagery tracking to monitor land-use changes and deforestation (e.g., Western Ghats Highway Project).
-- **AI Permit Advisor**: Intelligent guidance for applicants on required environmental, forest, and wildlife clearances.
-- **Meeting Gist**: AI-generated summaries of environmental review meetings.
-- **Public Transparency**: Dedicated dashboard for citizens to view projects, submit comments, and verify environmental complaints via AI.
-- **Real-time IoT/GIS**: Mock integration for sensor data and satellite-based change detection.
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React, Vite, Tailwind CSS, Motion (Framer), Lucide Icons.
-- **Backend**: Node.js, Express, Better-SQLite3, JWT Authentication.
-- **AI Engine**: Google Gemini (Flash 1.5).
-
-## 💻 Local Setup
-
-1. **Clone the Repo**:
-   ```bash
-   git clone https://github.com/sourabh-sahu-08/Ecotrack.git
-   cd Ecotrack
-   ```
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-3. **Configure Environment Variables**:
-   Create a `.env` file in the `backend` directory:
-   ```env
-   GROQ_API_KEY=your_groq_key_here
-   JWT_SECRET=your_jwt_secret
-   ```
-4. **Run the App**:
-   ```bash
-   npm run dev
-   ```
-
-## 🌐 Deployment
-
-### Backend (Render)
-The backend is configured for deployment on Render.
-- **Build Command**: `npm install; npm run build`
-- **Start Command**: `npm start`
-- **Environment Variables**:
-  - `GEMINI_API_KEY`: Your Google Gemini API Key
-  - `JWT_SECRET`: A secure string for JWT tokens
-  - `NODE_ENV`: `production`
-
-### Frontend (Vercel)
-The frontend can be deployed separately on Vercel for better performance and scaling.
-1. Connect your GitHub repository to Vercel.
-2. Set the **Root Directory** to `frontend`.
-3. Configure the following **Environment Variables**:
-   - `VITE_API_URL`: The full URL of your deployed backend on Render (e.g., `https://ecotrack-backend.onrender.com`).
-4. Vercel will automatically detect the Vite configuration and deploy the app.
+The platform streamlines the environmental clearance process through:
+- **Intelligent Automation**: AI-generated project summaries and document forensic analysis.
+- **Role-Based Access**: Dedicated workflows for Applicants, Regulators, and Citizens.
+- **Transparency**: Public monitoring of project impacts and satellite-based change detection.
 
 ---
-*© 2026 EcoTrack · Developed for Environmental Efficiency.*
+
+## 🌟 Key Features
+
+### 🏢 For Applicants
+- **Guided Submission**: Streamlined project application with real-time feedback.
+- **AI Permit Advisor**: intelligent guidance on required clearances (Environmental, Forest, Wildlife).
+- **Impact Simulation**: Predictive modeling for project environmental footprints.
+- **Compliance Tracking**: Real-time monitoring of application status and report requirements.
+
+### ⚖️ For Regulators
+- **AI Project Summary**: Automatically generated executive summaries for complex projects.
+- **Document Forensics**: AI-powered analysis of PDFs to detect inconsistencies and integrity issues.
+- **GIS Monitoring**: Integrated map view for project locations and environmental sensitivity.
+- **Deep Review**: Analytical tools for technical evaluation of clearances and risks.
+
+### 👥 For Citizens
+- **Public Explorer**: Transparent access to all active and pending project details.
+- **Environmental Stats**: Real-time pollution metrics and impact data.
+- **Satellite Tracking**: Visual comparison of land-use changes using high-res imagery.
+- **Grievance Portal**: AI-assisted complaint submission and transparency logs.
+
+---
+
+## 🛠️ Technical Architecture
+
+### **Frontend**
+- **Framework**: React 18 with Vite for ultra-fast builds.
+- **Styling**: Tailwind CSS with a custom, premium design system.
+- **Animations**: Framer Motion for smooth transitions and micro-interactions.
+- **Icons**: Lucide React for consistent, modern iconography.
+
+### **Backend**
+- **Server**: Node.js & Express.
+- **Database**: SQLite (via `better-sqlite3`) for robust, local-first data management.
+- **Security**: JWT-based authentication and secure password hashing.
+- **AI Engine**: Groq SDK for high-speed inference (Llama 3/Mixtral).
+
+---
+
+## 🚀 Local Deployment
+
+### 1. Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+- A [Groq Cloud](https://console.groq.com/) API Key
+
+### 2. Installation
+```bash
+# Clone the repository
+git clone https://github.com/sourabh-sahu-08/Ecotrack.git
+cd Ecotrack
+
+# Install all dependencies
+npm install
+```
+
+### 3. Environment Configuration
+Create a `.env` file in the `backend/` directory:
+```env
+PORT=5000
+GROQ_API_KEY=your_groq_api_key_here
+JWT_SECRET=your_secure_random_string
+NODE_ENV=development
+```
+
+### 4. Running the Application
+```bash
+# Start both frontend and backend in development mode
+npm run dev
+```
+
+---
+
+## 🌐 Production Deployment
+
+### **Backend (Render)**
+The project includes a `render-build.sh` for seamless deployment to Render.
+- **Build Command**: `npm install; npm run build`
+- **Start Command**: `npm start`
+- **Auto-Provisioning**: The SQLite database is automatically initialized on the first run.
+
+### **Frontend (Vercel)**
+Configured for static site generation and deployment.
+- **Root Directory**: `frontend`
+- **Build Command**: `vite build`
+- **Output Directory**: `dist`
+- **Environment Variable**: Set `VITE_API_URL` to your production backend URL.
+
+---
+
+## 🛡️ Security & Privacy
+- **Encrypted Data**: All user credentials and sensitive IDs are handled via secure JWTs.
+- **Audit Logs**: Every clearance decision and document update is tracked for transparency.
+- **Data Integrity**: AI-based document verification prevents fraudulent submissions.
+
+---
+
+<div align="center">
+  <p><b>PARIVESH 3.0 · Environmental Efficiency Through Innovation</b></p>
+  <p>© 2026 Developed for Government of India</p>
+</div>
