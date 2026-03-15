@@ -62,6 +62,28 @@ The platform streamlines the environmental clearance process through:
 
 ---
 
+## 📂 Project Structure
+
+```bash
+ecotrack/
+├── backend/                # Express.js Server
+│   ├── server.ts           # Core API & AI Logic
+│   ├── parivesh3.db        # SQLite Production Database
+│   ├── uploads/            # Encrypted Document Storage
+│   └── package.json        # Backend Dependencies
+├── frontend/               # React (Vite) Application
+│   ├── src/
+│   │   ├── components/     # UI Components (AI Panel, Sidebar)
+│   │   ├── pages/          # Dashboard & Profile Pages
+│   │   ├── context/        # Authentication & State
+│   │   └── App.tsx         # Main Router & Layout
+│   ├── public/             # Static Assets
+│   └── index.html          # Entry Point
+└── package.json            # Global Scripts
+```
+
+---
+
 ## 🚀 Local Deployment
 
 ### 1. Prerequisites
